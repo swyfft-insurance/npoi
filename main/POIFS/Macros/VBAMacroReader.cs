@@ -200,9 +200,9 @@ namespace NPOI.POIFS.Macros
                 // Check children
                 foreach (Entry child in dir)
                 {
-                    if (child is DirectoryNode)
+                    if (child is DirectoryNode node)
                     {
-                        FindMacros((DirectoryNode)child, modules);
+                        FindMacros(node, modules);
                     }
                 }
             }
@@ -347,10 +347,9 @@ namespace NPOI.POIFS.Macros
         {
             foreach (Entry entry in macroDir)
             {
-                if (!(entry is DocumentNode)) { continue; }
+                if (entry is not DocumentNode document) { continue; }
 
                 String name = entry.Name;
-                DocumentNode document = (DocumentNode)entry;
                 DocumentInputStream dis = new DocumentInputStream(document);
                 try
                 {
@@ -431,7 +430,7 @@ namespace NPOI.POIFS.Macros
             }
         }
 
-        private string ReadUnicodeString(RLEDecompressingInputStream in1, int unicodeNameRecordLength)
+        private static string ReadUnicodeString(RLEDecompressingInputStream in1, int unicodeNameRecordLength)
         {
             byte[] buffer = new byte[unicodeNameRecordLength];
             IOUtils.ReadFully(in1, buffer);

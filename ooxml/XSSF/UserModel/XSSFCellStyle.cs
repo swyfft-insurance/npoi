@@ -37,13 +37,13 @@ namespace NPOI.XSSF.UserModel
     public class XSSFCellStyle : ICellStyle
     {
 
-        private int _cellXfId;
-        private StylesTable _stylesSource;
+        private readonly int _cellXfId;
+        private readonly StylesTable _stylesSource;
         private CT_Xf _cellXf;
         private CT_Xf _cellStyleXf;
         private XSSFFont _font;
         private XSSFCellAlignment _cellAlignment;
-        private ThemesTable _theme;
+        private readonly ThemesTable _theme;
 
         /**
          * Creates a Cell Style from the supplied parts
@@ -122,10 +122,8 @@ namespace NPOI.XSSF.UserModel
          */
         public void CloneStyleFrom(ICellStyle source)
         {
-            if (source is XSSFCellStyle)
+            if (source is XSSFCellStyle src)
             {
-                XSSFCellStyle src = (XSSFCellStyle)source;
-
                 // Is it on our Workbook?
                 if (src._stylesSource == _stylesSource)
                 {
@@ -823,6 +821,24 @@ namespace NPOI.XSSF.UserModel
         }
 
         /// <summary>
+        /// Turn on or off "Quote Prefix" or "123 Prefix" for the style,
+        /// which is used to tell Excel that the thing which looks like
+        /// a number or a formula shouldn't be treated as on.
+        /// </summary>
+        /// <value>Is "Quote Prefix" or "123 Prefix" enabled for the cell?</value>
+        public bool IsQuotePrefixed
+        {
+            get
+            {
+                return _cellXf.quotePrefix;
+            }
+            set
+            {
+                _cellXf.quotePrefix = value;
+            }
+        }
+
+        /// <summary>
         /// Get the color to use for the right border
         /// </summary>
         public short RightBorderColor
@@ -1333,9 +1349,8 @@ namespace NPOI.XSSF.UserModel
          */
         public override bool Equals(Object o)
         {
-            if (o == null || !(o is XSSFCellStyle)) return false;
+            if (o == null || o is not XSSFCellStyle cf) return false;
 
-            XSSFCellStyle cf = (XSSFCellStyle)o;
             return _cellXf.ToString().Equals(cf.GetCoreXf().ToString());
         }
 

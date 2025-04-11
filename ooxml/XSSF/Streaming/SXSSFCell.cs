@@ -30,9 +30,9 @@ namespace NPOI.XSSF.Streaming
 {
     public class SXSSFCell : ICell
     {
-        private static POILogger logger = POILogFactory.GetLogger(typeof(SXSSFCell));
+        private static readonly POILogger logger = POILogFactory.GetLogger(typeof(SXSSFCell));
 
-        private SXSSFRow _row;
+        private readonly SXSSFRow _row;
         private Value _value;
         private ICellStyle _style;
         private Property _firstProperty;
@@ -85,17 +85,21 @@ namespace NPOI.XSSF.Streaming
 
         public CellType CachedFormulaResultType
         {
-            get { return GetCachedFormulaResultTypeEnum(); }
+            get
+            {
+                if(_value.GetType() != CellType.Formula)
+                {
+                    throw new InvalidOperationException("Only formula cells have cached results");
+                }
+
+                return ((FormulaValue) _value).GetFormulaType();
+            }
         }
 
+        [Obsolete("Will be removed at NPOI 2.8, Use CachedFormulaResultType instead.")]
         public CellType GetCachedFormulaResultTypeEnum()
         {
-            if (_value.GetType() != CellType.Formula)
-            {
-                throw new InvalidOperationException("Only formula cells have cached results");
-            }
-
-            return ((FormulaValue)_value).GetFormulaType();
+            return CachedFormulaResultType;
         }
 
         public IComment CellComment
@@ -286,8 +290,8 @@ namespace NPOI.XSSF.Streaming
 
                 XSSFHyperlink xssfobj = (XSSFHyperlink)value;
                 // Assign to us
-                CellReference reference = new CellReference(RowIndex, ColumnIndex);
-                xssfobj.GetCTHyperlink().@ref = reference.FormatAsString();
+                CellReference ref1 = new CellReference(RowIndex, ColumnIndex);
+                xssfobj.SetCellReference(ref1);
 
                 // Add to the lists
                 ((SXSSFSheet)Sheet)._sh.AddHyperlink(xssfobj);
@@ -442,7 +446,7 @@ namespace NPOI.XSSF.Streaming
             Sheet.ActiveCell = Address;
         }
 
-        public void SetCellErrorValue(byte value)
+        public ICell SetCellErrorValue(byte value)
         {
             //ensure type garuntees that the type is error so the if condition is never true.
             EnsureType(CellType.Error);
@@ -450,26 +454,29 @@ namespace NPOI.XSSF.Streaming
                 ((ErrorFormulaValue)_value).PreEvaluatedValue = value;
             else
                 ((ErrorValue)_value).Value = value;
+            return this;
         }
 
-        public void SetCellFormula(string formula)
+        public ICell SetCellFormula(string formula)
         {
             if (formula == null)
             {
                 SetType(CellType.Blank);
-                return;
+                return this;
             }
 
             EnsureFormulaType(ComputeTypeFromFormula(formula));
             ((FormulaValue)_value).Value = formula;
+            return this;
         }
 
-        public void SetCellType(CellType cellType)
+        public ICell SetCellType(CellType cellType)
         {
             EnsureType(cellType);
+            return this;
         }
 
-        public void SetCellValue(string value)
+        public ICell SetCellValue(string value)
         {
             if (value != null)
             {
@@ -481,9 +488,9 @@ namespace NPOI.XSSF.Streaming
                 }
 
                 if (_value.GetType() == CellType.Formula)
-                    if (_value is NumericFormulaValue)
+                    if (_value is NumericFormulaValue formulaValue)
                     {
-                        ((NumericFormulaValue)_value).PreEvaluatedValue = Double.Parse(value);
+                        formulaValue.PreEvaluatedValue = Double.Parse(value);
                     }
                     else
                     {
@@ -496,18 +503,21 @@ namespace NPOI.XSSF.Streaming
             {
                 SetCellType(CellType.Blank);
             }
+
+            return this;
         }
 
-        public void SetCellValue(bool value)
+        public ICell SetCellValue(bool value)
         {
             EnsureTypeOrFormulaType(CellType.Boolean);
             if (_value.GetType() == CellType.Formula)
                 ((BooleanFormulaValue)_value).PreEvaluatedValue = value;
             else
                 ((BooleanValue)_value).Value = value;
+            return this;
         }
 
-        public void SetCellValue(IRichTextString value)
+        public ICell SetCellValue(IRichTextString value)
         {
             XSSFRichTextString xvalue = (XSSFRichTextString)value;
             
@@ -529,21 +539,24 @@ namespace NPOI.XSSF.Streaming
             {
                 SetCellType(CellType.Blank);
             }
+
+            return this;
         }
 
-        public void SetCellValue(DateTime? value)
+        public ICell SetCellValue(DateTime? value)
         {
             if (value == null)
             {
                 SetCellType(CellType.Blank);
-                return;
+                return this;
             }
 
             bool date1904 = ((SXSSFWorkbook)Sheet.Workbook).XssfWorkbook.IsDate1904();
             SetCellValue(DateUtil.GetExcelDate(value.Value, date1904));
+            return this;
         }
 
-        public void SetCellValue(double value)
+        public ICell SetCellValue(double value)
         {
             if (Double.IsInfinity(value))
             {
@@ -563,6 +576,8 @@ namespace NPOI.XSSF.Streaming
                 else
                     ((NumericValue)_value).Value = value;
             }
+
+            return this;
         }
 
         public override string ToString()
@@ -693,7 +708,7 @@ namespace NPOI.XSSF.Streaming
         {
             if (_value.GetType() != CellType.Formula
                || ((FormulaValue)_value).GetFormulaType() != type)
-                setFormulaType(type);
+                SetFormulaType(type);
         }
         /*
          * Sets the cell type to type if it is different
@@ -711,7 +726,7 @@ namespace NPOI.XSSF.Streaming
             {
                 if (((FormulaValue)_value).GetFormulaType() == type)
                     return;
-                setFormulaType(type); // once a formula, always a formula
+                SetFormulaType(type); // once a formula, always a formula
                 return;
             }
             SetType(type);
@@ -755,7 +770,7 @@ namespace NPOI.XSSF.Streaming
                         if (_value != null)
                         {
                             // if a cell is not blank then convert the old value to string
-                            bool val = convertCellValueToBoolean();
+                            bool val = ConvertCellValueToBoolean();
                             bval.Value = val;
                         }
                         _value = bval;
@@ -773,7 +788,7 @@ namespace NPOI.XSSF.Streaming
             }
         }
 
-        private void setFormulaType(CellType type)
+        private void SetFormulaType(CellType type)
         {
             Value prevValue = _value;
             switch (type)
@@ -805,15 +820,17 @@ namespace NPOI.XSSF.Streaming
             }
 
             // if we had a Formula before, we should copy over the _value of the formula
-            if (prevValue is FormulaValue)
+            if (prevValue is FormulaValue value)
             {
-                ((FormulaValue)_value).Value = ((FormulaValue)prevValue).Value;
+                ((FormulaValue)_value).Value = value.Value;
             }
         }
-        private CellType ComputeTypeFromFormula(String formula)
+
+        private static CellType ComputeTypeFromFormula(String formula)
         {
             return CellType.Numeric;
         }
+
         //COPIED FROM https://svn.apache.org/repos/asf/poi/trunk/src/ooxml/java/org/apache/poi/xssf/usermodel/XSSFCell.java since the functions are declared private there
         /**
          * Used to help format error messages
@@ -824,13 +841,13 @@ namespace NPOI.XSSF.Streaming
                     + " " + (isFormulaCell ? "formula " : "") + "cell";
             return new InvalidOperationException(msg);
         }
-        private bool convertCellValueToBoolean()
+        private bool ConvertCellValueToBoolean()
         {
             CellType cellType = _value.GetType();
 
             if (cellType == CellType.Formula)
             {
-                cellType = GetCachedFormulaResultTypeEnum();
+                cellType = CachedFormulaResultType;
             }
 
             switch (cellType)
@@ -889,33 +906,34 @@ namespace NPOI.XSSF.Streaming
         //END OF COPIED CODE
 
 
-        public void SetCellValue(DateTime value)
+        public ICell SetCellValue(DateTime value)
         {
-            SetCellValue((DateTime?)value);
+            return SetCellValue((DateTime?)value);
         }
 
 #if NET6_0_OR_GREATER
-        public void SetCellValue(DateOnly value)
+        public ICell SetCellValue(DateOnly value)
         {
             bool date1904 = ((SXSSFWorkbook)Sheet.Workbook).XssfWorkbook.IsDate1904();
-            SetCellValue(DateUtil.GetExcelDate(value, date1904));
+            return SetCellValue(DateUtil.GetExcelDate(value, date1904));
         }
 
-        public void SetCellValue(DateOnly? value)
+        public ICell SetCellValue(DateOnly? value)
         {
             if (!value.HasValue)
             {
                 SetCellType(CellType.Blank);
-                return;
+                return this;
             }
             
             SetCellValue(value.Value);
+            return this;
         }
 #endif
 
-        public void SetBlank()
+        public ICell SetBlank()
         {
-            SetCellType(CellType.Blank);
+            return SetCellType(CellType.Blank);
         }
     }
 }

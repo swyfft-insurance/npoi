@@ -28,6 +28,7 @@ namespace NPOI.XSSF.UserModel.Helpers
     /// (the data part of a sheet). Note - within POI, we use 0 based column 
     /// indexes, but the column defInitions in the XML are 1 based!
     /// </summary>
+    [Obsolete("Use XSSFColumn object for all things column")]
     public class ColumnHelper
     {
         private readonly CT_Worksheet worksheet;
@@ -84,7 +85,7 @@ namespace NPOI.XSSF.UserModel.Helpers
                 new TreeSet<CT_Col>(CTColComparator.BY_MIN_MAX);
             trackedCols.AddAll(cols.GetColList());
             AddCleanColIntoCols(cols, newCol, trackedCols);
-            cols.SetColArray(trackedCols.ToArray(new CT_Col[0]));
+            cols.SetColArray(trackedCols.ToArray([]));
             return cols;
         }
 

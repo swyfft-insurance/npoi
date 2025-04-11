@@ -53,7 +53,7 @@ namespace NPOI.XWPF.UserModel
         /**
          * Keeps track on all id-values used in this document and included parts, like headers, footers, etc.
          */
-        private IdentifierManager drawingIdManager = new IdentifierManager(0L, 4294967295L);
+        private readonly IdentifierManager drawingIdManager = new IdentifierManager(0L, 4294967295L);
         protected List<XWPFFooter> footers = new List<XWPFFooter>();
         protected List<XWPFHeader> headers = new List<XWPFHeader>();
         protected List<XWPFHyperlink> hyperlinks = new List<XWPFHyperlink>();
@@ -107,21 +107,21 @@ namespace NPOI.XWPF.UserModel
 
                 foreach (object o in ctDocument.body.Items)
                 {
-                    if (o is CT_P)
+                    if (o is CT_P ctP)
                     {
-                        XWPFParagraph p = new XWPFParagraph((CT_P)o, this);
+                        XWPFParagraph p = new XWPFParagraph(ctP, this);
                         bodyElements.Add(p);
                         paragraphs.Add(p);
                     }
-                    else if (o is CT_Tbl)
+                    else if (o is CT_Tbl tbl)
                     {
-                        XWPFTable t = new XWPFTable((CT_Tbl)o, this);
+                        XWPFTable t = new XWPFTable(tbl, this);
                         bodyElements.Add(t);
                         tables.Add(t);
                     }
-                    else if (o is CT_SdtBlock)
+                    else if (o is CT_SdtBlock block)
                     {
-                        XWPFSDT c = new XWPFSDT((CT_SdtBlock)o, this);
+                        XWPFSDT c = new XWPFSDT(block, this);
                         bodyElements.Add(c);
                         contentControls.Add(c);
                     }
@@ -474,9 +474,9 @@ namespace NPOI.XWPF.UserModel
         }
         public XWPFFootnote GetEndnoteByID(int id)
         {
-            if (endnotes == null || !endnotes.ContainsKey(id)) 
+            if (endnotes == null || !endnotes.TryGetValue(id, out XWPFFootnote byId)) 
                 return null;
-            return endnotes[id];
+            return byId;
         }
 
         public List<XWPFFootnote> GetFootnotes()
@@ -1568,8 +1568,8 @@ namespace NPOI.XWPF.UserModel
         public void RegisterPackagePictureData(XWPFPictureData picData)
         {
             List<XWPFPictureData> list = null;
-            if(packagePictures.ContainsKey(picData.Checksum))
-              list = packagePictures[(picData.Checksum)];
+            if(packagePictures.TryGetValue(picData.Checksum, out List<XWPFPictureData> picture))
+              list = picture;
             if (list == null)
             {
                 list = new List<XWPFPictureData>(1);
@@ -1590,8 +1590,8 @@ namespace NPOI.XWPF.UserModel
              * exists.
              */
             List<XWPFPictureData> xwpfPicDataList = null;
-            if(packagePictures.ContainsKey(Checksum))
-               xwpfPicDataList = packagePictures[(Checksum)];
+            if(packagePictures.TryGetValue(Checksum, out List<XWPFPictureData> picture))
+               xwpfPicDataList = picture;
             if (xwpfPicDataList != null)
             {
                 IEnumerator<XWPFPictureData> iter = xwpfPicDataList.GetEnumerator();
@@ -1706,9 +1706,8 @@ namespace NPOI.XWPF.UserModel
         public XWPFPictureData GetPictureDataByID(String blipID)
         {
             POIXMLDocumentPart relatedPart = GetRelationById(blipID);
-            if (relatedPart is XWPFPictureData)
+            if (relatedPart is XWPFPictureData xwpfPicData)
             {
-                XWPFPictureData xwpfPicData = (XWPFPictureData)relatedPart;
                 return xwpfPicData;
             }
             return null;
@@ -1859,18 +1858,18 @@ namespace NPOI.XWPF.UserModel
          */
         public XWPFTableCell GetTableCell(CT_Tc cell)
         {
-            if (cell == null|| !(cell.Parent is CT_Row))
+            if (cell == null|| cell.Parent is not CT_Row row)
                 return null;
 
-            object parent2 = ((CT_Row)cell.Parent).Parent;
-            if ( parent2== null || !(parent2 is CT_Tbl))
+            object parent2 = row.Parent;
+            if ( parent2== null || parent2 is not CT_Tbl tbl)
                 return null;
-            XWPFTable table = GetTable((CT_Tbl)parent2);
+            XWPFTable table = GetTable(tbl);
             if (table == null)
             {
                 return null;
             }
-            XWPFTableRow tableRow = table.GetRow((CT_Row)cell.Parent);
+            XWPFTableRow tableRow = table.GetRow(row);
             if (tableRow == null)
             {
                 return null;
@@ -1882,7 +1881,8 @@ namespace NPOI.XWPF.UserModel
         {
             return this;
         }
-        private void FindAndReplaceTextInParagraph(XWPFParagraph paragraph, string oldValue, string newValue)
+
+        private static void FindAndReplaceTextInParagraph(XWPFParagraph paragraph, string oldValue, string newValue)
         {
             var index = paragraph?.Text.IndexOf(oldValue) ?? -1;
             if (index != -1)
@@ -1922,7 +1922,7 @@ namespace NPOI.XWPF.UserModel
             }
         }
 
-        private void FindAndReplaceTextInTable(XWPFTable table, string oldValue, string newValue)
+        private static void FindAndReplaceTextInTable(XWPFTable table, string oldValue, string newValue)
         {
             foreach (var row in table.Rows)
             {
@@ -1958,12 +1958,21 @@ namespace NPOI.XWPF.UserModel
                 {
                     FindAndReplaceTextInParagraph(paragraph, oldValue, newValue);
                 }
+                foreach(var table in footer.Tables)
+                {
+                    FindAndReplaceTextInTable(table, oldValue, newValue);
+                }
             }
+
             foreach (var header in this.HeaderList)
             {
                 foreach (var paragraph in header.Paragraphs)
                 {
                     FindAndReplaceTextInParagraph(paragraph, oldValue, newValue);
+                }
+                foreach(var table in header.Tables)
+                {
+                    FindAndReplaceTextInTable(table, oldValue, newValue);
                 }
             }
         }

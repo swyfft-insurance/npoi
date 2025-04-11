@@ -40,7 +40,7 @@ namespace NPOI.XSSF.Streaming
     /// </summary>
     public class SXSSFPicture : IPicture
     {
-        private static POILogger logger = POILogFactory.GetLogger(typeof(SXSSFPicture));
+        private static readonly POILogger logger = POILogFactory.GetLogger(typeof(SXSSFPicture));
         /// <summary>
         /// <para>
         /// Column width measured as the number of characters of the maximum digit width of the
@@ -51,10 +51,10 @@ namespace NPOI.XSSF.Streaming
         /// This value is the same for default font in Office 2007 (Calibry) and Office 2003 and earlier (Arial)
         /// </para>
         /// </summary>
-        private static float DEFAULT_COLUMN_WIDTH = 9.140625f;
+        private static readonly float DEFAULT_COLUMN_WIDTH = 9.140625f;
 
-        private SXSSFWorkbook _wb;
-        private XSSFPicture _picture;
+        private readonly SXSSFWorkbook _wb;
+        private readonly XSSFPicture _picture;
 
         public SXSSFPicture(SXSSFWorkbook _wb, XSSFPicture _picture)
         {
@@ -284,7 +284,7 @@ namespace NPOI.XSSF.Streaming
             get
             {
                 XSSFAnchor a = GetAnchor();
-                return (a is XSSFClientAnchor) ? (XSSFClientAnchor)a : null;
+                return (a is XSSFClientAnchor anchor) ? anchor : null;
             }
         }
 
@@ -312,6 +312,26 @@ namespace NPOI.XSSF.Streaming
             get { return _picture.IsNoFill; }
             set { _picture.IsNoFill = value;}
         }
+
+        public string ShapeName => this.GetShapeName();
+
+        public IChildAnchor Anchor => GetAnchor();
+
+        public IShape Parent => GetParent();
+
+        public uint ID => _picture.ID;
+
+        public string Name { get => this.GetShapeName(); set => throw new System.NotImplementedException(); }
+
+        public int LineStyleColor => _picture.LineStyleColor;
+
+        public int FillColor { get => _picture.FillColor; set => throw new System.NotImplementedException(); }
+        public double LineWidth { get => _picture.LineWidth; set => throw new System.NotImplementedException(); }
+        public LineStyle LineStyle { get => _picture.LineStyle; set => throw new System.NotImplementedException(); }
+        public LineEndingCapType LineEndingCapType { get => _picture.LineEndingCapType; set => throw new System.NotImplementedException(); }
+        public CompoundLineType CompoundLineType { get => _picture.CompoundLineType; set => throw new System.NotImplementedException(); }
+
+        public int CountOfAllChildren => _picture.CountOfAllChildren;
 
         public void SetFillColor(int red, int green, int blue)
         {

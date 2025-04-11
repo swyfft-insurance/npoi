@@ -18,15 +18,15 @@ namespace NPOI.OpenXml4Net.OPC
      */
     public class ZipPackage : OPCPackage
     {
-        private static String MIMETYPE = "mimetype";
-        private static String SETTINGS_XML = "settings.xml";
-        private static POILogger logger = POILogFactory.GetLogger(typeof(ZipPackage));
+        private static readonly String MIMETYPE = "mimetype";
+        private static readonly String SETTINGS_XML = "settings.xml";
+        private static readonly POILogger logger = POILogFactory.GetLogger(typeof(ZipPackage));
 
         /**
          * Zip archive, as either a file on disk,
          *  or a stream
          */
-        private Util.ZipEntrySource zipArchive;
+        private readonly Util.ZipEntrySource zipArchive;
         bool isStream = false;  // whether the file is passed in with stream, no means passed in with string path
         public bool IsExternalStream { get { return isStream; } set { isStream = value; } }
 
@@ -318,7 +318,7 @@ namespace NPOI.OpenXml4Net.OPC
          * Builds a PackagePartName for the given ZipEntry,
          *  or null if it's the content types / invalid part
          */
-        private PackagePartName BuildPartName(ZipEntry entry)
+        private static PackagePartName BuildPartName(ZipEntry entry)
         {
             try
             {
@@ -460,7 +460,7 @@ namespace NPOI.OpenXml4Net.OPC
          *
          * @return A unique identifier use to be use as a temp file name.
          */
-        private String GenerateTempFileName(string directory)
+        private static String GenerateTempFileName(string directory)
         {
             FileInfo tmpFilename = null ;
             string path = null;
@@ -503,9 +503,9 @@ namespace NPOI.OpenXml4Net.OPC
 
         protected override PackagePart GetPartImpl(PackagePartName partName)
         {
-            if (partList.ContainsKey(partName))
+            if (partList.TryGetValue(partName, out PackagePart impl))
             {
-                return partList[partName];
+                return impl;
             }
             return null;
         }
@@ -528,10 +528,10 @@ namespace NPOI.OpenXml4Net.OPC
 
             try
             {
-                if (!(outputStream is ZipOutputStream))
+                if (outputStream is not ZipOutputStream stream)
                     zos = new ZipOutputStream(outputStream);
                 else
-                    zos = (ZipOutputStream)outputStream;
+                    zos = stream;
 
                 zos.UseZip64 = UseZip64.Off;
                 // If the core properties part does not exist in the part list,
@@ -582,10 +582,8 @@ namespace NPOI.OpenXml4Net.OPC
                     logger.Log(POILogger.DEBUG, "Save part '"
                             + ZipHelper.GetZipItemNameFromOPCName(part
                                     .PartName.Name) + "'");
-                    if (partMarshallers.ContainsKey(part._contentType))
+                    if (partMarshallers.TryGetValue(part._contentType, out PartMarshaller marshaller))
                     {
-                        PartMarshaller marshaller = partMarshallers[part._contentType];
-
                         if (!marshaller.Marshall(part, zos))
                         {
                             throw new OpenXml4NetException(

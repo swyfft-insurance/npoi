@@ -374,7 +374,7 @@ namespace NPOI.XSSF.UserModel
             get
             {
                 XSSFAnchor a = GetAnchor() as XSSFAnchor;
-                return (a is XSSFClientAnchor) ? (XSSFClientAnchor)a : null;
+                return (a is XSSFClientAnchor clientAnchor) ? clientAnchor : null;
             }
         }
 
@@ -389,6 +389,8 @@ namespace NPOI.XSSF.UserModel
                 return (XSSFSheet)this.GetDrawing().GetParent();
             }
         }
+
+        public override string ShapeName => ctPicture.nvPicPr.cNvPr.name;
     }
 }
 

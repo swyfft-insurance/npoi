@@ -68,34 +68,11 @@ namespace NPOI.Util
             byte[] header = new byte[8];
             int read = IOUtils.ReadFully(stream, header);
 
-            if (read < 1)
+            if(read < 1)
                 throw new EmptyFileException();
 
             // Wind back those 8 bytes
-            if (stream is PushbackInputStream) {
-                //PushbackInputStream pin = (PushbackInputStream)stream;
-                //pin.Unread(header, 0, read);
-                stream.Position -= read;
-            } else {
-                stream.Reset();
-            }
-
-            return header;
-        }
-
-        public static byte[] PeekFirst8Bytes(Stream stream)
-        {
-            // We want to peek at the first 8 bytes
-            long mark =  stream.Position;
-
-            byte[] header = new byte[8];
-            int read = IOUtils.ReadFully(stream, header);
-
-            if (read < 1)
-                throw new EmptyFileException();
-
-            // Wind back those 8 bytes
-            if (stream is PushbackInputStream)
+            if(stream is PushbackInputStream)
             {
                 //PushbackInputStream pin = (PushbackInputStream)stream;
                 //pin.Unread(header, 0, read);
@@ -103,10 +80,49 @@ namespace NPOI.Util
             }
             else
             {
-                stream.Position = mark;
+                stream.Reset();
             }
 
             return header;
+        }
+
+        public static byte[] PeekFirstNBytes(Stream stream, int limit)
+        {
+            long mark =  stream.Position;
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(limit);
+            if(stream is ByteArrayInputStream inputStream)
+                Copy(new BoundedInputStream(inputStream, limit), bos);
+            else
+            {
+                MemoryStream ms = new MemoryStream();
+                stream.CopyTo(ms, limit);
+                Copy(new BoundedInputStream(new ByteArrayInputStream(ms.GetBuffer()), limit), bos);
+            }
+
+            int readBytes = (int)bos.Length;
+            if(readBytes == 0)
+            {
+                throw new EmptyFileException();
+            }
+            if(readBytes < limit)
+            {
+                bos.Write(new byte[limit - readBytes]);
+            }
+            byte[] peekedBytes = bos.ToByteArray();
+            if(stream is PushbackInputStream)
+            {
+                //PushbackInputStream pin = (PushbackInputStream)stream;
+                //pin.unread(peekedBytes, 0, readBytes);
+                stream.Position -= peekedBytes.Length;
+            }
+            else
+            {
+                stream.Position = mark;
+                (stream as InputStream)?.Reset();
+            }
+
+            return peekedBytes;
         }
 
         /// <summary>
@@ -129,26 +145,27 @@ namespace NPOI.Util
         /// <returns></returns>
         public static byte[] ToByteArray(Stream stream, int length)
         {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(length == Int32.MaxValue ? 4096 : length);
-
-            byte[] buffer = new byte[4096];
-            int totalBytes = 0, readBytes;
-            do
+            using (ByteArrayOutputStream baos = new ByteArrayOutputStream(length == Int32.MaxValue ? 4096 : length))
             {
-                readBytes = stream.Read(buffer, 0, Math.Min(buffer.Length, length - totalBytes));
-                totalBytes += Math.Max(readBytes, 0);
-                if (readBytes > 0)
+                byte[] buffer = new byte[4096];
+                int totalBytes = 0, readBytes;
+                do
                 {
-                    baos.Write(buffer, 0, readBytes);
+                    readBytes = stream.Read(buffer, 0, Math.Min(buffer.Length, length - totalBytes));
+                    totalBytes += Math.Max(readBytes, 0);
+                    if(readBytes > 0)
+                    {
+                        baos.Write(buffer, 0, readBytes);
+                    }
+                } while(totalBytes < length && readBytes > 0);
+            
+                if(length != Int32.MaxValue && totalBytes < length)
+                {
+                    throw new IOException("unexpected EOF");
                 }
-            } while (totalBytes < length && readBytes > 0);
-
-            if (length != Int32.MaxValue && totalBytes < length)
-            {
-                throw new IOException("unexpected EOF");
+            
+                return baos.ToByteArray();
             }
-
-            return baos.ToByteArray();
         }
 
         public static byte[] ToByteArray(ByteBuffer buffer, int length)

@@ -353,7 +353,7 @@ namespace NPOI.XSSF.UserModel
             // Strip the sheet name,
             // CTWorksheet.getTableParts defines in which sheet the table is
             String reference = refs.FormatAsString();
-            if (reference.IndexOf('!') != -1)
+            if (reference.Contains('!'))
             {
                 reference = reference.Substring(reference.IndexOf('!') + 1);
             }
@@ -458,7 +458,7 @@ namespace NPOI.XSSF.UserModel
                 }
                 // Casting to int should be safe here - tables larger than the
                 // sheet (which holds the actual data of the table) can't exists.
-                return (int)tableColumns.tableColumn.Count();
+                return (int)tableColumns.tableColumn.Count;
             }
         }
         /// <summary>
@@ -655,8 +655,8 @@ namespace NPOI.XSSF.UserModel
             // but the escape is not present in the column definition
             int idx = -1;
             string testKey = columnHeader.Replace("'", "").ToUpper(CultureInfo.CurrentCulture);
-            if (columnMap.ContainsKey(testKey))
-                idx = columnMap[testKey];
+            if (columnMap.TryGetValue(testKey, out int value))
+                idx = value;
             return idx;
         }
         /// <summary>

@@ -32,12 +32,12 @@ namespace NPOI.XSSF.UserModel
      * Represents a shape with a predefined geometry in a SpreadsheetML Drawing.
      * Possible shape types are defined in {@link NPOI.SS.UserModel.ShapeTypes}
      */
-    public class XSSFSimpleShape : XSSFShape, IEnumerable<XSSFTextParagraph>
+    public class XSSFSimpleShape : XSSFShape, IEnumerable<XSSFTextParagraph>, ISimpleShape
     { // TODO - instantiable superclass
         /**
          * List of the paragraphs that make up the text in this shape
          */
-        private List<XSSFTextParagraph> _paragraphs;
+        private readonly List<XSSFTextParagraph> _paragraphs;
         /**
          * A default instance of CTShape used for creating new shapes.
          */
@@ -46,7 +46,7 @@ namespace NPOI.XSSF.UserModel
         /**
          *  Xml bean that stores properties of this shape
          */
-        private CT_Shape ctShape;
+        private readonly CT_Shape ctShape;
 
         protected internal XSSFSimpleShape(XSSFDrawing Drawing, CT_Shape ctShape)
         {
@@ -316,7 +316,7 @@ namespace NPOI.XSSF.UserModel
          * @param value the value of the bullet
          * @return appropriate prefix for an auto-numbering bullet
          */
-        private String GetBulletPrefix(ListAutoNumber scheme, int value)
+        private static String GetBulletPrefix(ListAutoNumber scheme, int value)
         {
             StringBuilder out1 = new StringBuilder();
 
@@ -386,7 +386,7 @@ namespace NPOI.XSSF.UserModel
         /**
          * Convert an integer to its alpha equivalent e.g. 1 = A, 2 = B, 27 = AA etc
          */
-        private String valueToAlpha(int value)
+        private static String valueToAlpha(int value)
         {
             String alpha = "";
             int modulo;
@@ -399,13 +399,13 @@ namespace NPOI.XSSF.UserModel
             return alpha;
         }
 
-        private static String[] _romanChars = new String[] { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
-        private static int[] _romanAlphaValues = new int[] { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+        private static readonly String[] _romanChars = new String[] { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+        private static readonly int[] _romanAlphaValues = new int[] { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
 
         /**
          * Convert an integer to its roman equivalent e.g. 1 = I, 9 = IX etc
          */
-        private String valueToRoman(int value)
+        private static String valueToRoman(int value)
         {
             StringBuilder out1 = new StringBuilder();
             for (int i = 0; value > 0 && i < _romanChars.Length; i++)
@@ -1014,5 +1014,7 @@ namespace NPOI.XSSF.UserModel
                 }
             }
         }
+
+        public override string ShapeName => ctShape.nvSpPr.cNvPr.name;
     }
 }

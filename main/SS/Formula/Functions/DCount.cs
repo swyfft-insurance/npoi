@@ -15,39 +15,40 @@
    limitations under the License.
 ==================================================================== */
 
+
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using NUnit.Framework;
-using NUnit.Framework.Interfaces;
+using System.Text;
 
-namespace TestCases
+namespace NPOI.SS.Formula.Functions
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-    public sealed class RunSerialyAndSweepTmpFilesAttribute : Attribute, ITestAction
+    using NPOI.SS.Formula.Eval;
+
+    /// <summary>
+    /// Implementation of the DCount function:
+    /// Counts the number of numeric cells in a column in an area with given conditions.
+    /// </summary>
+    public sealed class DCount : IDStarAlgorithm
     {
-        private static object syncSequential = new object();
-
-        public ActionTargets Targets { get { return ActionTargets.Test; } }
-
-        private static void SweepTemporaryFiles()
+        private long count;
+        public bool ProcessMatch(ValueEval eval)
         {
-            foreach (var tempFilePath in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.tmp"))
+            if(eval is NumericValueEval)
             {
-                File.Delete(tempFilePath);
+                count++;
+            }
+            return true;
+        }
+        public ValueEval Result
+        {
+            get
+            {
+                return new NumberEval(count);
             }
         }
-
-        public void BeforeTest(ITest test)
-        {
-            Monitor.Enter(syncSequential);
-            SweepTemporaryFiles();
-        }
-
-        public void AfterTest(ITest test)
-        {
-            SweepTemporaryFiles();
-            Monitor.Exit(syncSequential);
-        }
+        public bool AllowEmptyMatchField { get; } = true;
     }
 }
+
