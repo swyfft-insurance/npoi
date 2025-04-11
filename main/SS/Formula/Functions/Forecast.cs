@@ -15,6 +15,14 @@ namespace NPOI.SS.Formula.Functions
     /// </summary>
     public class Forecast : Fixed3ArgFunction
     {
+
+        private Forecast()
+        {
+            
+        }
+        
+        public static readonly Forecast Instance = new();
+        
         public override ValueEval Evaluate(int srcRowIndex, int srcColumnIndex, ValueEval arg0, ValueEval arg1,
             ValueEval arg2)
         {

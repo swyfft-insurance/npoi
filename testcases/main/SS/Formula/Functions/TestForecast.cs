@@ -17,6 +17,9 @@
  * ====================================================================
  */
 
+using NPOI.XSSF.UserModel;
+using System.IO;
+
 namespace TestCases.SS.Formula.Functions
 {
     using NUnit.Framework;
@@ -28,14 +31,14 @@ namespace TestCases.SS.Formula.Functions
     using NPOI.SS.Formula.Functions;
 
     /**
-     * Test for Excel function FORECAST()
+     * Tests for Excel function FORECAST() AND FORECAST.INSTANCE()
      *
      * @author Ken Smith
      */
     [TestFixture]
     public class TestForecast
     {
-        private static readonly Function FORECAST = new Forecast();
+        private static readonly Function FORECAST = Forecast.Instance;
 
         /// <summary>
         /// This test is replicated in the "TestBasic" tab of the "Forecast.xls" file.
@@ -141,16 +144,59 @@ namespace TestCases.SS.Formula.Functions
          *  https://support.microsoft.com/en-us/office/forecast-and-forecast-linear-functions-50ca49c9-7b40-4892-94e4-7ad38bbeda99
          */
         [Test]
-        public void TestFromFile()
+        public void TestFromFileXls()
         {
             IWorkbook wb = HSSFTestDataSamples.OpenSampleWorkbook("Forecast.xls");
             HSSFFormulaEvaluator fe = new(wb);
 
             ISheet example1 = wb.GetSheet("TestFromFile");
             ICell a8 = example1.GetRow(7).GetCell(0);
+            ICell a9 = example1.GetRow(8).GetCell(0);
+
+            // Test the FORECAST function
             Assert.AreEqual("FORECAST(30,A2:A6,B2:B6)", a8.CellFormula);
             fe.Evaluate(a8);
             Assert.AreEqual(10.60725309, a8.NumericCellValue, 0.00000001);
+            
+            // Test the FORECAST.LINEAR function
+            // Assert.AreEqual("FORECAST.LINEAR(30,A2:A6,B2:B6)", a9.CellFormula);
+            fe.Evaluate(a9);
+            Assert.AreEqual(10.60725309, a9.NumericCellValue, 0.00000001);
+        }
+        
+        /**
+         *  Example from
+         *  https://support.microsoft.com/en-us/office/forecast-and-forecast-linear-functions-50ca49c9-7b40-4892-94e4-7ad38bbeda99
+         */
+        [Test]
+        public void TestFromFileXlsx()
+        {
+            string testdataPath = Path.Combine(
+                TestContext.CurrentContext.TestDirectory,
+                TestContext.Parameters[POIDataSamples.TEST_PROPERTY], 
+                "spreadsheet");
+            const string filename = "Forecast.xlsx";
+            var file = Path.Combine(testdataPath, filename);
+            IWorkbook wb;
+            using (var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                wb = new XSSFWorkbook(fs);
+            }            
+            XSSFFormulaEvaluator fe = new(wb);
+
+            ISheet example1 = wb.GetSheet("TestFromFile");
+            ICell a8 = example1.GetRow(7).GetCell(0);
+            ICell a9 = example1.GetRow(8).GetCell(0);
+
+            // Test the FORECAST function
+            Assert.AreEqual("FORECAST(30,A2:A6,B2:B6)", a8.CellFormula);
+            fe.Evaluate(a8);
+            Assert.AreEqual(10.60725309, a8.NumericCellValue, 0.00000001);
+            
+            // Test the FORECAST.LINEAR function
+            // Assert.AreEqual("FORECAST.LINEAR(30,A2:A6,B2:B6)", a9.CellFormula);
+            fe.Evaluate(a9);
+            Assert.AreEqual(10.60725309, a9.NumericCellValue, 0.00000001);
         }
 
         private static ValueEval Invoke(ValueEval x, ValueEval yArray, ValueEval xArray)
