@@ -8,11 +8,20 @@ on:
 
 jobs:
   opencode:
+    # Only trusted org members may invoke the agent. This is a public repo, so
+    # without this gate ANY user (including anonymous outsiders via a fork PR
+    # review comment) could trigger the agent with a "/oc" comment, spending the
+    # OPENCODE_API_KEY / Actions minutes and driving a prompt-injectable agent.
+    # author_association is present on both issue_comment and
+    # pull_request_review_comment payloads, so one check covers both triggers.
     if: |
-      contains(github.event.comment.body, ' /oc') ||
-      startsWith(github.event.comment.body, '/oc') ||
-      contains(github.event.comment.body, ' /opencode') ||
-      startsWith(github.event.comment.body, '/opencode')
+      (
+        contains(github.event.comment.body, ' /oc') ||
+        startsWith(github.event.comment.body, '/oc') ||
+        contains(github.event.comment.body, ' /opencode') ||
+        startsWith(github.event.comment.body, '/opencode')
+      ) &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
