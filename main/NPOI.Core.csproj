@@ -6,7 +6,6 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>../npoi.snk</AssemblyOriginatorKeyFile>
     <OutputPath>..\solution\$(Configuration)\</OutputPath>
-    <NoWarn>$(NoWarn);CS8002</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -21,15 +20,14 @@
 
   <ItemGroup>
     <PackageReference Include="Enums.NET" />
-    <PackageReference Include="ExcelFinancialFunctions" />
     <PackageReference Include="ExtendedNumerics.BigDecimal" />
     <PackageReference Include="MathNet.Numerics.Signed" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
     <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="SharpZipLib" />
-    <PackageReference Include="SkiaSharp" PrivateAssets="all" Pack="false" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" PrivateAssets="all" Pack="false" />
+    <PackageReference Include="SkiaSharp"/>
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies"/>
     <PackageReference Include="ZString" />
   </ItemGroup>
 
