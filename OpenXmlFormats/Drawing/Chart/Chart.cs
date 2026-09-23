@@ -11005,7 +11005,8 @@ namespace NPOI.OpenXmlFormats.Dml.Chart
         /// All axes of the plot area in document order: the order they were parsed or added in.
         /// Axes placed directly into the typed lists (<see cref="valAx"/>, <see cref="catAx"/>,
         /// <see cref="dateAx"/>, <see cref="serAx"/>) follow the recorded ones, and axes removed
-        /// from those lists are omitted.
+        /// from those lists are omitted. Reordering axes that are already recorded within a typed
+        /// list does not change their document order.
         /// </summary>
         public List<object> GetAxesInDocumentOrder()
         {
